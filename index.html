@@ -347,7 +347,12 @@ function isApproved(c){
   return (s.grade!=null && Number(s.grade)>=11) || s.status==="done";
 }
 function isChoiceFulfilled(c){
-  return !!g(c).selected || isApproved(c);
+  const s=g(c);
+  return !!s.selected || s.status==="done" || (s.grade!=null && Number(s.grade)>=11);
+}
+
+function choiceCompletedCount(type){
+  return C.filter(c=>c.effective===type && isChoiceFulfilled(c)).length;
 }
 function save(){ localStorage.setItem("unasRecordV2",JSON.stringify(S)); }
 
@@ -433,8 +438,8 @@ function summary(){
   const pr=ok.filter(c=>c.effective==="PRACTICA").reduce((s,c)=>s+c.credits,0);
   // En electivos y actividades libres, basta con elegir el curso/actividad
   // o registrar una nota aprobatoria para que cuente en su barra.
-  const se=Math.min(3,C.filter(c=>c.effective==="ELECTIVO"&&isChoiceFulfilled(c)).length);
-  const sa=Math.min(3,C.filter(c=>c.effective==="ACTIVIDAD LIBRE"&&isChoiceFulfilled(c)).length);
+  const se=Math.min(3,choiceCompletedCount("ELECTIVO"));
+  const sa=Math.min(3,choiceCompletedCount("ACTIVIDAD LIBRE"));
   document.getElementById("o").textContent=ob+" / 189 cr."; document.getElementById("ob").style.width=Math.min(100,ob/189*100)+"%";
   document.getElementById("e").textContent=se+" / 3 cursos"; document.getElementById("eb").style.width=(se/3*100)+"%";
   document.getElementById("a").textContent=sa+" / 3 actividades"; document.getElementById("ab").style.width=(sa/3*100)+"%";
