@@ -342,6 +342,13 @@ let edit = null;
 const LIMIT = {OBLIGATORIO:189,PRACTICA:4};
 
 function g(c){ return S[c.code] || {status:"pending",grade:null,selected:false}; }
+function isApproved(c){
+  const s=g(c);
+  return (s.grade!=null && Number(s.grade)>=11) || s.status==="done";
+}
+function isChoiceFulfilled(c){
+  return !!g(c).selected || isApproved(c);
+}
 function save(){ localStorage.setItem("unasRecordV2",JSON.stringify(S)); }
 
 function toggleElective(code){
@@ -424,8 +431,10 @@ function summary(){
 
   const ob=ok.filter(c=>c.effective==="OBLIGATORIO").reduce((s,c)=>s+c.credits,0);
   const pr=ok.filter(c=>c.effective==="PRACTICA").reduce((s,c)=>s+c.credits,0);
-  const se=C.filter(c=>c.effective==="ELECTIVO"&&g(c).selected).length;
-  const sa=C.filter(c=>c.effective==="ACTIVIDAD LIBRE"&&g(c).selected).length;
+  // En electivos y actividades libres, basta con elegir el curso/actividad
+  // o registrar una nota aprobatoria para que cuente en su barra.
+  const se=Math.min(3,C.filter(c=>c.effective==="ELECTIVO"&&isChoiceFulfilled(c)).length);
+  const sa=Math.min(3,C.filter(c=>c.effective==="ACTIVIDAD LIBRE"&&isChoiceFulfilled(c)).length);
   document.getElementById("o").textContent=ob+" / 189 cr."; document.getElementById("ob").style.width=Math.min(100,ob/189*100)+"%";
   document.getElementById("e").textContent=se+" / 3 cursos"; document.getElementById("eb").style.width=(se/3*100)+"%";
   document.getElementById("a").textContent=sa+" / 3 actividades"; document.getElementById("ab").style.width=(sa/3*100)+"%";
@@ -447,8 +456,8 @@ function showReport(){
   const avg=grades.length?(grades.reduce((a,b)=>a+b,0)/grades.length).toFixed(2):"—";
   const mandatory=ok.filter(c=>c.effective==="OBLIGATORIO").reduce((s,c)=>s+c.credits,0);
   const practice=ok.filter(c=>c.effective==="PRACTICA").reduce((s,c)=>s+c.credits,0);
-  const electives=C.filter(c=>c.effective==="ELECTIVO"&&g(c).selected);
-  const activities=C.filter(c=>c.effective==="ACTIVIDAD LIBRE"&&g(c).selected);
+  const electives=C.filter(c=>c.effective==="ELECTIVO"&&isChoiceFulfilled(c));
+  const activities=C.filter(c=>c.effective==="ACTIVIDAD LIBRE"&&isChoiceFulfilled(c));
   const pct=Math.min(100,credits/205*100);
   const fmt=n=>Number(n).toFixed(1);
   const now=new Date();
@@ -469,8 +478,8 @@ function showReport(){
     const list=C.filter(c=>c.cycle===cycle&&printStatus(c)==="ok");
     if(list.length) approvedByCycle.push(`<div class="rbox"><b>${cycle}° ciclo · ${list.length} aprobado(s)</b><span>${list.map(c=>escPrint(c.name)+(g(c).grade!=null?` — Nota ${fmt(g(c).grade)}`:"" )).join(" · ")}</span></div>`);
   }
-  const electiveNames=electives.length?electives.map(c=>escPrint(c.name)).join(" · "):"Ninguno seleccionado";
-  const activityNames=activities.length?activities.map(c=>escPrint(c.activity)).join(" · "):"Ninguna seleccionada";
+  const electiveNames=electives.length?electives.slice(0,3).map(c=>escPrint(c.name)).join(" · "):"Ninguno elegido o aprobado";
+  const activityNames=activities.length?activities.slice(0,3).map(c=>escPrint(c.activity)).join(" · "):"Ninguna elegida o aprobada";
   document.getElementById("reportBody").innerHTML=`
     <div class="report-grid">
       <div class="rbox"><b>Electivos elegidos</b><span>${electiveNames}</span></div>
