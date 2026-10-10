@@ -1,4 +1,4 @@
-const CACHE_NAME = 'record-admin2027-v1';
+const CACHE_NAME = 'record-admin2027-v2';
 const APP_SHELL = [
   './',
   './index.html',
